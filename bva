@@ -1,0 +1,740 @@
+# python3 -m pip install pygame
+
+# imports
+import sys
+import pygame
+import math
+import os
+import random
+
+# instantiations
+width = 720
+height = 560
+
+# colors
+black = (0, 0, 0)
+gray = (180, 180, 180)
+dgray = (90, 90, 90)
+green = (0, 255, 0)
+dgreen = (10, 90, 40)
+red = (255, 0, 0)
+dred = (139, 0, 0)
+blue = (0 , 110, 220)
+dblue = (0, 0, 120)
+yellow = (55, 55, 0)
+white = (255, 255, 255)
+brown = (140, 70, 0)
+
+
+# spot class
+class spot(object):
+
+    # spot initialization
+    def __init__(self, x, y):
+        self.color = black
+        self.x = x
+        self.y = y
+        # -1 for none
+        #  1 for bank
+        #  2 for shooter
+        #  3 for wall
+        self.taken = -1
+        self.rect = pygame.Rect(self.x, self.y, 30, 30)
+
+    # draw the spot
+    def draw(self, disp):
+        pygame.draw.rect(disp, black, self.rect, 2)
+
+
+# trash
+class trash(object):
+
+    # tower initialization
+    def __init__(self, x, y):
+        self.color = red
+        self.selected = False
+        self.x = x
+        self.y = y
+        self.rect = pygame.Rect(self.x, self.y, 50, 50)
+
+    # draw the tower
+    def draw(self, disp):
+        if self.selected:
+            pygame.draw.rect(disp, self.color, pygame.Rect(self.x - 2, self.y - 2, 54, 54))
+        pygame.draw.rect(disp, self.color, self.rect)
+        pygame.draw.rect(disp, white, pygame.Rect(self.x + 2, self.y + 2, 46, 46))
+        self.clicked = False
+
+# upgrade
+class upgrade(object):
+
+    # tower initialization
+    def __init__(self, x, y):
+        self.color = green
+        self.selected = False
+        self.x = x
+        self.y = y
+        self.rect = pygame.Rect(self.x, self.y, 50, 50)
+
+    # draw the tower
+    def draw(self, disp):
+        if self.selected:
+            pygame.draw.rect(disp, self.color, pygame.Rect(self.x - 2, self.y - 2, 54, 54))
+        pygame.draw.rect(disp, self.color, self.rect)
+        pygame.draw.rect(disp, white, pygame.Rect(self.x + 2, self.y + 2, 46, 46))
+        self.clicked = False
+
+
+# tower bank
+class bank(object):
+
+    # tower initialization
+    def __init__(self, x, y):
+        self.color = green
+        self.level = 1
+        self.health = 50
+        self.selected = False
+        self.attacked = 0
+        self.x = x
+        self.y = y
+        self.rect = pygame.Rect(self.x, self.y, 60, 60)
+
+    # draw the tower
+    def draw(self, disp):
+        if self.selected:
+            pygame.draw.rect(disp, black, pygame.Rect(self.x - 2, self.y - 2, 64, 64))
+        pygame.draw.rect(disp, self.color, self.rect)
+        if self.level > 0:
+            pygame.draw.rect(disp, dgreen, pygame.Rect(self.x + 6, self.y + 42, 48, 8))
+        if self.level > 1:
+            pygame.draw.rect(disp, dgreen, pygame.Rect(self.x + 6, self.y + 26, 48, 8))
+        if self.level > 2:
+            pygame.draw.rect(disp, dgreen, pygame.Rect(self.x + 6, self.y + 10, 48, 8))
+        self.clicked = False
+        if self.level == 4:
+            print('asdf')
+
+# tower shooter
+class shooter(object):
+
+    # tower initialization
+    def __init__(self, x, y):
+        self.color = blue
+        self.level = 1
+        self.health = 50
+        self.selected = False
+        self.attacked = 0
+        self.x = x
+        self.y = y
+        self.rect = pygame.Rect(self.x, self.y, 60, 60)
+
+    # draw the tower
+    def draw(self, disp):
+        if self.selected:
+            pygame.draw.rect(disp, black, pygame.Rect(self.x - 2, self.y - 2, 64, 64))
+        pygame.draw.rect(disp, self.color, self.rect)
+        if self.level > 0:
+            pygame.draw.rect(disp, dblue, pygame.Rect(self.x + 6, self.y + 42, 48, 8))
+        if self.level > 1:
+            pygame.draw.rect(disp, dblue, pygame.Rect(self.x + 6, self.y + 26, 48, 8))
+        if self.level > 2:
+            pygame.draw.rect(disp, dblue, pygame.Rect(self.x + 6, self.y + 10, 48, 8))
+        self.clicked = False
+        if self.level == 4:
+            print('asdf')
+
+
+# tower wall
+class wall(object):
+
+    # tower initialization
+    def __init__(self, x, y):
+        self.color = red
+        self.health = 500
+        self.selected = False
+        self.attacked = 0
+        self.x = x
+        self.y = y
+        self.rect = pygame.Rect(self.x, self.y, 60, 60)
+
+    # draw the tower
+    def draw(self, disp):
+        if self.selected:
+            pygame.draw.rect(disp, black, pygame.Rect(self.x - 2, self.y - 2, 64, 64))
+        pygame.draw.rect(disp, self.color, self.rect)
+        self.clicked = False
+
+
+# alien 1
+class alien1(object):
+
+    # alien initialization
+    def __init__(self):
+        self.health = 20
+        self.color = gray
+        self.attacking = False
+        self.x = 690
+        self.y = 0
+        self.rect = pygame.Rect(self.x - 30, self.y - 30, 60, 60)
+
+    # generate a random position for the alien
+    def randompos(self, y1, y2):
+        self.y = 45 + 80 * random.randrange(y1, y2)
+        self.rect = pygame.Rect(self.x - 30, self.y - 30, 60, 60)
+
+    # move the alien
+    def move(self):
+        if self.attacking == False:
+            self.x = self.x - 1
+            self.rect = pygame.Rect(self.x - 30, self.y - 30, 60, 60)
+
+    # draw the alien
+    def draw(self, disp):
+        pygame.draw.circle(disp, self.color, (self.x, self.y), 30)
+        if self.health > 96:
+            pygame.draw.circle(disp, dgray, (self.x, self.y), 27)
+            pygame.draw.circle(disp, gray, (self.x, self.y), 24)
+        if self.health > 48:
+            pygame.draw.circle(disp, dgray, (self.x, self.y), 21)
+            pygame.draw.circle(disp, gray, (self.x, self.y), 18)
+        if self.health > 24:
+            pygame.draw.circle(disp, dgray, (self.x, self.y), 15)
+            pygame.draw.circle(disp, gray, (self.x, self.y), 12)
+        if self.health > 12:
+            pygame.draw.circle(disp, dgray, (self.x, self.y), 9)
+            pygame.draw.circle(disp, gray, (self.x, self.y), 6)
+
+        if self.attacking:
+            # print(str(int((self.x+20)/80 - 0.5)) + " " + str((self.y+35)/80))
+            pygame.draw.circle(disp, red, (self.x, self.y), 3)
+
+
+# bullet
+class bullet(object):
+
+    # alien initialization
+    def __init__(self, dmg, x, y):
+        self.dmg = dmg
+        self.color = black
+        self.x = x
+        self.y = y
+        self.rect = pygame.Rect(self.x - 6, self.y - 6, 12, 12)
+
+    # move the bullet
+    def move(self):
+        self.x = self.x + 4
+        self.rect = pygame.Rect(self.x - 6, self.y - 6, 12, 12)
+
+    # draw the bullet
+    def draw(self, disp):
+        pygame.draw.circle(disp, self.color, (self.x, self.y), 6)
+
+
+# score board class
+class scoreboard(object):
+
+    # score board initialization
+    def __init__(self, disp):
+        self.disp = disp
+        self.name = pygame.font.match_font('arial')
+
+    # draw text
+    def text(self, disp, text, x, y, color, size):
+        self.font = pygame.font.Font(self.name, size)
+        text_surface = self.font.render(text, True, color)
+        text_rect = text_surface.get_rect()
+        text_rect.midtop = (x, y)
+        disp.blit(text_surface, text_rect)
+
+
+# main thingy
+def run():
+    # make display
+    disp = pygame.display.set_mode((width, height))
+    pygame.display.set_caption('PvZ?')
+
+    # array initializations
+    buy = []
+    banks = []
+    shooters = []
+    walls = []
+    aliens = []
+    bullets = []
+
+    # matrix initialization
+    board = [[None for i in range(8)] for i in range(5)]
+    for i in range(5):
+        for j in range(8):
+            board[i][j] = spot(25 + j * 80, 30 + i * 80)
+
+    # some initializations
+    inGame = True
+    lose = False
+    time = 0
+    money = 100
+    level = 0
+    aliensKilled = 0
+    moneySpent = 0
+    buyBank = bank(10, 425)
+    buyShooter = shooter(90, 425)
+    buyWall = wall(170, 425)
+    trashcan = trash(660, 500)
+    up = upgrade(590, 500)
+
+    # more initializations
+    pygame.init()
+    cl = pygame.time.Clock()
+    sb = scoreboard(disp)
+
+    # add to arrays
+    buy.append(buyBank)
+    buy.append(buyShooter)
+    buy.append(buyWall)
+    buy.append(trashcan)
+    buy.append(up)
+
+    # in game
+    while inGame == True:
+
+        # increment time
+        time = time + 1
+
+        # difficulty on level
+        if time > 40 and time <= 1800:
+            # if time > 450 and time <= 1800:
+            level = 1
+            if time % 120 == 0:
+                newAlien = alien1()
+                newAlien.randompos(0, 5)
+                aliens.append(newAlien)
+        elif time > 1800 and time <= 2800:
+            level = 2
+            if time % 110 == 0:
+                newAlien = alien1()
+                newAlien.randompos(0, 5)
+                aliens.append(newAlien)
+        elif time > 2800 and time <= 3700:
+            level = 3
+            if time % 100 == 0:
+                newAlien = alien1()
+                newAlien.randompos(0, 5)
+                aliens.append(newAlien)
+        elif time > 3700 and time <= 4500:
+            level = 4
+            if time % 90 == 0:
+                rand = random.randint(0, 1)
+                if rand == 0:
+                    newAlien = alien1()
+                elif rand == 1:
+                    newAlien = alien1()
+                    newAlien.health = 40
+                newAlien.randompos(0, 5)
+                aliens.append(newAlien)
+        elif time > 4500 and time <= 5400:
+            level = 5
+            if time % 80 == 0:
+                rand = random.randint(0, 1)
+                if rand == 0:
+                    newAlien = alien1()
+                elif rand == 1:
+                    newAlien = alien1()
+                    newAlien.health = 40
+                newAlien.randompos(0, 5)
+                aliens.append(newAlien)
+        elif time > 5400 and time <= 6300:
+            level = 6
+            if time % 70 == 0:
+                rand = random.randint(0, 1)
+                if rand == 0:
+                    newAlien = alien1()
+                elif rand == 1:
+                    newAlien = alien1()
+                    newAlien.health = 40
+                newAlien.randompos(0, 5)
+                aliens.append(newAlien)
+        elif time > 6300 and time <= 7200:
+            level = 7
+            if time % 60 == 0:
+                rand = random.randint(0, 1)
+                if rand == 0:
+                    newAlien = alien1()
+                elif rand == 1:
+                    newAlien = alien1()
+                    newAlien.health = 40
+                newAlien.randompos(0, 5)
+                aliens.append(newAlien)
+        elif time > 7200 and time <= 8000:
+            level = 8
+            if time % 50 == 0:
+                rand = random.randint(0, 4)
+                if rand == 0:
+                    newAlien = alien1()
+                elif rand == 1 or rand == 2:
+                    newAlien = alien1()
+                    newAlien.health = 40
+                elif rand == 3 or rand == 4:
+                    newAlien = alien1()
+                    newAlien.health = 80
+                newAlien.randompos(0, 5)
+                aliens.append(newAlien)
+        elif time > 8000 and time <= 9000:
+            level = 9
+            if time % 40 == 0:
+                rand = random.randint(0, 4)
+                if rand == 0:
+                    newAlien = alien1()
+                elif rand == 1 or rand == 2:
+                    newAlien = alien1()
+                    newAlien.health = 40
+                elif rand == 3 or rand == 4:
+                    newAlien = alien1()
+                    newAlien.health = 80
+                newAlien.randompos(0, 5)
+                aliens.append(newAlien)
+        elif time > 9000 and time <= 10000:
+            level = 10
+            if time % 35 == 0:
+                rand = random.randint(0, 4)
+                if rand == 0:
+                    newAlien = alien1()
+                elif rand == 1 or rand == 2:
+                    newAlien = alien1()
+                    newAlien.health = 40
+                elif rand == 3 or rand == 4:
+                    newAlien = alien1()
+                    newAlien.health = 80
+                newAlien.randompos(0, 5)
+                aliens.append(newAlien)
+        elif time > 11000 and time <= 12000:
+            level = 11
+            if time % 30 == 0:
+                rand = random.randint(0, 4)
+                if rand == 0:
+                    newAlien = alien1()
+                elif rand == 1 or rand == 2:
+                    newAlien = alien1()
+                    newAlien.health = 40
+                elif rand == 3 or rand == 4:
+                    newAlien = alien1()
+                    newAlien.health = 80
+                newAlien.randompos(0, 5)
+                aliens.append(newAlien)
+        elif time > 12000 and time <= 15000:
+            level = 12
+            if time % 25 == 0:
+                rand = random.randint(0, 4)
+                if rand == 0:
+                    newAlien = alien1()
+                    newAlien.health = 40
+                elif rand == 1 or rand == 2:
+                    newAlien = alien1()
+                    newAlien.health = 80
+                elif rand == 3 or rand == 4:
+                    newAlien = alien1()
+                    newAlien.health = 160
+                newAlien.randompos(0, 5)
+                aliens.append(newAlien)
+        elif time > 14000:
+            level = 13
+            if time % 20 == 0:
+                rand = random.randint(0, 4)
+                if rand == 0:
+                    newAlien = alien1()
+                    newAlien.health = 40
+                elif rand == 1 or rand == 2:
+                    newAlien = alien1()
+                    newAlien.health = 80
+                elif rand == 3 or rand == 4:
+                    newAlien = alien1()
+                    newAlien.health = 160
+                newAlien.randompos(0, 5)
+                aliens.append(newAlien)
+
+        # increment money
+        if time % 30 == 0:
+            numBanks = 0
+            for b in banks:
+                numBanks = numBanks + int(math.pow(2, b.level))
+            money = money + 4 + numBanks
+
+        # get inputs
+        for event in pygame.event.get():
+
+            # exit game
+            if event.type == pygame.QUIT:
+                pygame.quit()
+
+            # if mouse is clicked
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                pos = pygame.mouse.get_pos()
+
+                # buy bank
+                if buyBank.selected:
+                    for r in board:
+                        for m in r:
+                            if m.rect.collidepoint(pos) and m.taken == -1 and money > 50:
+                                m.taken = 1
+                                newBank = bank(m.x - 15, m.y - 15)
+                                banks.append(newBank)
+                                money = money - 50
+                                moneySpent = moneySpent + 50
+
+                # buy shooter         
+                elif buyShooter.selected:
+                    for r in board:
+                        for m in r:
+                            if m.rect.collidepoint(pos) and m.taken == -1 and money > 80:
+                                m.taken = 2
+                                newShooter = shooter(m.x - 15, m.y - 15)
+                                shooters.append(newShooter)
+                                money = money - 80
+                                moneySpent = moneySpent + 80
+
+                # buy wall  
+                elif buyWall.selected:
+                    for r in board:
+                        for m in r:
+                            if m.rect.collidepoint(pos) and m.taken == -1 and money > 40:
+                                m.taken = 3
+                                newWall = wall(m.x - 15, m.y - 15)
+                                walls.append(newWall)
+                                money = money - 40
+                                moneySpent = moneySpent + 40
+
+                # sell
+                elif trashcan.selected:
+                    for r in board:
+                        for m in r:
+                            if m.rect.collidepoint(pos) and m.taken > -1:
+                                if m.taken == 1:
+                                    for b in banks:
+                                        if m.x - 15 == b.x and m.y - 15 == b.y:
+                                            b.health = -1
+                                elif m.taken == 2:
+                                    for s in shooters:
+                                        if m.x - 15 == s.x and m.y - 15 == s.y:
+                                            s.health = -1
+                                elif m.taken == 3:
+                                    for w in walls:
+                                        if m.x - 15 == w.x and m.y - 15 == w.y:
+                                            w.health = -1
+
+                # upgrade
+                elif up.selected:
+                    for r in board:
+                        for m in r:
+                            if m.rect.collidepoint(pos) and m.taken > -1:
+                                 if m.taken == 1:
+                                    for b in banks:
+                                        if m.x - 15 == b.x and m.y - 15 == b.y and b.level < 3:
+                                            price = int(math.pow(2, b.level)) * 50
+                                            if money > price:
+                                                b.level = b.level + 1
+                                                money = money - price
+                                                moneySpent = moneySpent + price
+                                 elif m.taken == 2:
+                                    for s in shooters:
+                                        if m.x - 15 == s.x and m.y - 15 == s.y and s.level < 4:
+                                            price = int(math.pow(2, s.level)) * 80
+                                            if money > price:
+                                                s.level = s.level + 1
+                                                money = money - price
+                                                moneySpent = moneySpent + price
+
+
+                # see if buying/trashing
+                for b in buy:
+                    if b.rect.collidepoint(pos):
+                        b.selected = True
+                        exit
+                    else:
+                        b.selected = False
+
+            # if a key is pressed
+            if event.type == pygame.KEYDOWN:
+                # escape exits loop (reset)
+                if event.key == pygame.K_RETURN:
+                    inGame = False
+
+        # remove the dead towers and aliens
+        for b in banks:
+            if b.health <= 0:
+                board[int((b.y - 15) / 80)][int((b.x - 10) / 80)].taken = -1
+                banks.remove(b)
+        for s in shooters:
+            if s.health <= 0:
+                board[int((s.y - 15) / 80)][int((s.x - 10) / 80)].taken = -1
+                shooters.remove(s)
+        for w in walls:
+            if w.health <= 0:
+                board[int((w.y - 15) / 80)][int((w.x - 10) / 80)].taken = -1
+                walls.remove(w)
+        for a in aliens:
+            if a.health <= 0:
+                aliens.remove(a)
+                aliensKilled = aliensKilled + 1
+
+        # subtract health for attacked towers
+        if time % 10 == 0:
+            for b in banks:
+                b.health = b.health - b.attacked
+                b.attacked = 0
+            for s in shooters:
+                s.health = s.health - s.attacked
+                s.attacked = 0
+            for w in walls:
+                w.health = w.health - w.attacked
+                w.attacked = 0
+
+        # see if shooters should attack
+        for s in shooters:
+            for a in aliens:
+                if int((s.y + 75) / 80) == int((a.y + 35) / 80) and time % 30 == 0:
+                    newBullet = bullet(int(math.pow(2, s.level - 1)), s.x + 60, s.y + 30)
+                    bullets.append(newBullet)
+
+        # check if aliens should attack
+        for a in aliens:
+            attack = False
+            for b in banks:
+                if pygame.Rect.colliderect(a.rect, b.rect):
+                    attack = True
+                    b.attacked = b.attacked + 1
+                    exit
+            for s in shooters:
+                if pygame.Rect.colliderect(a.rect, s.rect):
+                    attack = True
+                    s.attacked = s.attacked + 1
+                    exit
+            for w in walls:
+                if pygame.Rect.colliderect(a.rect, w.rect):
+                    attack = True
+                    w.attacked = w.attacked + 1
+                    exit
+            a.attacking = attack
+
+        # move bullets and the aliens
+        if time % 2 == 0:
+            for a in aliens:
+                a.move()
+            for b in bullets:
+                b.move()
+
+        # see if bullet hit alien
+        for b in bullets:
+            for a in aliens:
+                if pygame.Rect.colliderect(a.rect, b.rect):
+                    a.health = a.health - b.dmg
+                    b.x = 800
+
+        # if bullet off-screen then remove
+        for b in bullets:
+            if b.x > 720:
+                bullets.remove(b)
+
+        # if alien reaches end then lose
+        for a in aliens:
+            if a.x == 0:
+                lose = True
+
+        # draw background
+        pygame.draw.rect(disp, brown, pygame.Rect(0, 10, 720, 70))
+        pygame.draw.rect(disp, brown, pygame.Rect(0, 90, 720, 70))
+        pygame.draw.rect(disp, brown, pygame.Rect(0, 170, 720, 70))
+        pygame.draw.rect(disp, brown, pygame.Rect(0, 250, 720, 70))
+        pygame.draw.rect(disp, brown, pygame.Rect(0, 330, 720, 70))
+        pygame.draw.rect(disp, white, pygame.Rect(0, 410, 720, 150))
+
+        # draw places to put
+        for b in buy:
+            b.draw(disp)
+            if b.selected and b != trashcan and b != up:
+                for r in board:
+                    for m in r:
+                        if m.taken == -1:
+                            m.draw(disp)
+
+        # draw banks
+        for b in banks:
+            b.draw(disp)
+
+        # draw shooters
+        for s in shooters:
+            s.draw(disp)
+
+        # draw walls
+        for w in walls:
+            w.draw(disp)
+
+        # draw sell
+        if trashcan.selected or up.selected:
+            for r in board:
+                for m in r:
+                    if m.taken > -1 and m.taken != 3:
+                        m.draw(disp)
+
+        # draw aliens
+        for a in aliens:
+            a.draw(disp)
+
+        # draw bullets
+        for b in bullets:
+            b.draw(disp)
+
+        # draw text
+        sb.text(disp, 'Money: ' + str(money), 650, 475, black, 15)
+        sb.text(disp, 'Level: ' + str(level), 650, 430, black, 30)
+
+        sb.text(disp, 'Demolish', 685, 510, black, 10)
+        sb.text(disp, 'Building', 685, 525, black, 10)
+
+        sb.text(disp, 'Upgrade', 615, 510, black, 10)
+        sb.text(disp, 'Building', 615, 525, black, 10)
+
+        sb.text(disp, 'Bank (50)', 40, 485, black, 10)
+        sb.text(disp, 'Shooter (80)', 120, 485, black, 10)
+        sb.text(disp, 'Wall (30)', 200, 485, black, 10)
+
+        sb.text(disp,
+                'Don\'t let the aliens reach the you (the far left)! Stop them by building the listed buildings above with enough money needed ^',
+                300, 510, black, 10)
+        sb.text(disp,
+                'To build: select building and spot. Once built, they can be upgraded (double cost previously spent on building) or destoryed->',
+                300, 525, black, 10)
+
+        # at loss
+        while lose:
+            # inputs
+            for event in pygame.event.get():
+
+                # exit game
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+
+                # key input to break loop
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN:
+                        lose = False
+                        inGame = False
+
+            # draw information
+            disp.fill(black)
+            sb.text(disp, 'Aliens Won!', 350, 130, red, 60)
+            sb.text(disp, 'Level Achieved: ' + str(level), 350, 230, green, 40)
+            sb.text(disp, 'Time Elapsed: ' + f'{(time / 1800):.2f}' + ' minutes', 350, 280, green, 40)
+            sb.text(disp, 'Aliens Killed: ' + str(aliensKilled), 350, 330, red, 40)
+            sb.text(disp, 'Money Spent: ' + str(moneySpent), 350, 380, green, 40)
+            sb.text(disp, 'Press Enter to Restart', 350, 460, white, 20)
+            pygame.display.flip()
+
+        # update game screen
+        pygame.display.flip()
+        cl.tick(30)
+
+
+# run stuff
+while True:
+    run()
+
+# exit
+quit()
